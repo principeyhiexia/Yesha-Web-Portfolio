@@ -1,0 +1,136 @@
+/* =============================================================
+   LIGHT BLUE PORTFOLIO SCRIPT
+   Handles: mobile menu, active nav link, scroll-reveal animations,
+   animated skill rings, back-to-top button, and the contact form.
+============================================================= */
+
+document.addEventListener('DOMContentLoaded', function () {
+
+  /* 1. MOBILE MENU TOGGLE */
+  const menuToggle = document.getElementById('menuToggle');
+  const navLinks = document.getElementById('navLinks');
+
+  menuToggle.addEventListener('click', function () {
+    navLinks.classList.toggle('open');
+    menuToggle.classList.toggle('open');
+  });
+
+  document.querySelectorAll('.nav-link').forEach(function (link) {
+    link.addEventListener('click', function () {
+      navLinks.classList.remove('open');
+      menuToggle.classList.remove('open');
+    });
+  });
+
+  /* 2. HIGHLIGHT ACTIVE NAV LINK WHILE SCROLLING */
+  const sections = document.querySelectorAll('section[id]');
+  const navLinkEls = document.querySelectorAll('.nav-link');
+
+  function updateActiveLink() {
+    let currentId = '';
+    const scrollPos = window.scrollY + 120;
+    sections.forEach(function (section) {
+      if (scrollPos >= section.offsetTop) currentId = section.getAttribute('id');
+    });
+    navLinkEls.forEach(function (link) {
+      link.classList.remove('active-link');
+      if (link.getAttribute('href') === '#' + currentId) link.classList.add('active-link');
+    });
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+
+  /* 2b. NAVBAR SHADOW ON SCROLL
+     Adds a soft shadow under the navbar once the page has scrolled a
+     little, so it feels grounded instead of floating flat on the page. */
+  const navbarEl = document.getElementById('navbar');
+  function updateNavbarShadow() {
+    if (window.scrollY > 12) navbarEl.classList.add('scrolled');
+    else navbarEl.classList.remove('scrolled');
+  }
+  window.addEventListener('scroll', updateNavbarShadow);
+  updateNavbarShadow();
+
+  /* 3. FADE-IN ON SCROLL */
+  const revealElements = document.querySelectorAll('.reveal');
+  const revealObserver = new IntersectionObserver(function (entries, observer) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  revealElements.forEach(function (el) { revealObserver.observe(el); });
+
+  /* 4. ANIMATED SKILL RINGS
+     Each .ring-card has a data-percent attribute (0-100). The ring's
+     circumference is 2 * PI * 42 (radius=42) = ~264. We animate
+     stroke-dashoffset from 264 (empty) down to the target value,
+     only once the ring scrolls into view. */
+  const CIRCUMFERENCE = 2 * Math.PI * 42;
+  const ringCards = document.querySelectorAll('.ring-card');
+
+  // Animates the "80%" style label counting up from 0 while the ring fills,
+  // so the number and the ring finish together instead of the number just
+  // popping in.
+  function animateCount(el, target, duration) {
+    const start = performance.now();
+    function tick(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic, matches the ring's easing feel
+      el.textContent = Math.round(eased * target) + '%';
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  const ringObserver = new IntersectionObserver(function (entries, observer) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        const card = entry.target;
+        const percent = parseFloat(card.getAttribute('data-percent')) || 0;
+        const fillCircle = card.querySelector('.ring-fill');
+        const percentLabel = card.querySelector('.ring-percent');
+        const offset = CIRCUMFERENCE - (percent / 100) * CIRCUMFERENCE;
+        setTimeout(function () {
+          fillCircle.style.strokeDashoffset = offset;
+          if (percentLabel) animateCount(percentLabel, percent, 1300);
+        }, 150);
+        observer.unobserve(card);
+      }
+    });
+  }, { threshold: 0.4 });
+
+  ringCards.forEach(function (card) { ringObserver.observe(card); });
+
+  /* 5. BACK TO TOP BUTTON */
+  const backToTopBtn = document.getElementById('backToTop');
+  window.addEventListener('scroll', function () {
+    if (window.scrollY > 400) backToTopBtn.classList.add('show');
+    else backToTopBtn.classList.remove('show');
+  });
+  backToTopBtn.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* 6. CONTACT FORM HANDLING
+     Shows a confirmation message only -- does NOT send a real email yet.
+     TO MAKE THIS ACTUALLY SEND MESSAGES: sign up at https://formspree.io
+     (or your own backend), then set the form's "action" attribute in
+     index.html and remove the preventDefault() below. */
+  const contactForm = document.getElementById('contactForm');
+  const formStatus = document.getElementById('formStatus');
+
+  contactForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const name = document.getElementById('formName').value.trim();
+    formStatus.textContent = 'Thanks, ' + name + '! Your message has been noted. (Connect this form to a service to actually receive it.)';
+    contactForm.reset();
+  });
+
+  /* 7. AUTO-UPDATE COPYRIGHT YEAR */
+  const yearSpan = document.getElementById('currentYear');
+  if (yearSpan) yearSpan.textContent = new Date().getFullYear();
+
+});
